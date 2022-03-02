@@ -1,0 +1,45 @@
+---
+
+- name: "webserver-setup via ansible"
+  hosts: amazon
+  become: true
+  vars_files:
+    - packages.yml
+    - apache.yml
+  tasks:
+    - name: "YUM upate"
+      yum:
+        name: '*'
+        state: latest
+
+    - name: "Rebooting the server now"
+      reboot:
+        test_command: uptime
+
+    - name: "Check the Uptime of the servers"
+      shell: "uptime"
+      register: Uptime
+
+    - debug: var=Uptime
+
+    - name: "Installing httpd"
+      yum:
+        name: "{{ packages }}"
+        state: present
+
+
+    - name: "website copying"
+      copy:
+        src: ./website/
+        dest: /var/www/html/
+        owner: "{{ httpd_user }}"
+        group: "{{ httpd_group }}"
+
+
+    - name: "Restart and enable the httpd service"
+      service:
+        name: "{{ item }}"
+        state: restarted
+        enabled: true
+      with_items:
+        - httpd
